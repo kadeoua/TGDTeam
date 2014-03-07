@@ -1,0 +1,203 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Audio;
+using Microsoft.Xna.Framework.Content;
+using Microsoft.Xna.Framework.GamerServices;
+using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Input;
+using Microsoft.Xna.Framework.Media;
+
+namespace MyFirstGame
+{
+    public class Game1 : Microsoft.Xna.Framework.Game
+    {
+        GraphicsDeviceManager graphics;
+        SpriteBatch spriteBatch;
+
+        //mouse state variable
+        MouseState mouseState;
+        //store location of variable
+        Vector2 MouseLocation, bulletTarget, bulletVelocity, Velocity;
+        Texture2D earth, BackgroundTexture, curser, bullet, asteroid, gameOver, restart;
+        //store position of specific variables
+        Vector2 earthPosition = new Vector2(250,250);
+        Vector2 bulletPosition = new Vector2(300, 300);
+        Vector2 restartPosition= new Vector2(500,500);
+        asteroid asteroid1;
+        bool bulletActive=false;
+        bool asteroidActive = false;
+        bool gameOverActive = false;
+
+        public Game1()
+        {
+            graphics = new GraphicsDeviceManager(this);
+            Content.RootDirectory = "Content";
+            // Set window size
+            this.graphics.PreferredBackBufferWidth = 600;
+            this.graphics.PreferredBackBufferHeight = 600;
+        }
+        protected override void Initialize()
+        {
+            base.Initialize();
+        }
+
+        protected override void LoadContent()
+        {
+            // Create a new SpriteBatch, which can be used to draw textures.
+            spriteBatch = new SpriteBatch(GraphicsDevice);
+
+            //load images for sprite textures for draw method
+            earth = Content.Load<Texture2D>("Earth");
+            BackgroundTexture = Content.Load<Texture2D>("Background");
+            curser= Content.Load<Texture2D>("curser");
+            bullet = Content.Load<Texture2D>("bullet");
+            asteroid = Content.Load<Texture2D>("asteroid");
+            gameOver = Content.Load<Texture2D>("Game Over");
+            restart = Content.Load<Texture2D>("restart");
+        }
+
+        protected override void UnloadContent()
+        {
+        }
+
+        protected override void Update(GameTime gameTime)
+        {
+            if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed)
+                this.Exit();
+                mouseState = Mouse.GetState();
+                MouseLocation = new Vector2(mouseState.X, mouseState.Y);
+                //Updates the position of the mouse pointer for target scope
+            if (!gameOverActive)
+            {
+                //If statement which activates when clicker is pressed
+                if (mouseState.LeftButton == ButtonState.Pressed)
+                {
+                        //following two if statments verify the mouse postion is within game area
+                        if (mouseState.X < 600 && mouseState.Y < 600)
+                        { if (mouseState.X > 0 && mouseState.Y > 0)
+                            {
+                            //following statement creates a bullet if not already active
+                                if (!bulletActive)
+                                {
+                                    bulletTarget = new Vector2(mouseState.X, mouseState.Y);
+                                    bulletActive = true;
+                                    bulletVelocity = getVelocity(bulletPosition, bulletTarget);
+                                }
+                            }
+                        }
+                    
+                }
+
+                if (bulletActive)
+                {
+                    float elapsedTime = (float)gameTime.ElapsedGameTime.TotalSeconds;
+                    //These two if statements remove bullet sprite if it leaves the screen
+                    if (bulletPosition.Y < -10 || bulletPosition.Y > 610)
+                    {
+                        bulletActive = false;
+                        bulletPosition = new Vector2(300, 300);
+                    }
+                    if (bulletPosition.X < -10 || bulletPosition.X > 610)
+                    {
+                        bulletActive = false;
+                        bulletPosition = new Vector2(300, 300);
+                    }
+                    //update bullet position
+                    bulletPosition += (bulletVelocity * 200 * elapsedTime);
+                }
+                //if statement creates an asteroid every 3 seconds
+                if (gameTime.TotalGameTime.Seconds % 3 == 0)
+                {
+                    asteroid1 = new asteroid(new Vector2(0, 0));
+                    asteroidActive = asteroid1.asteroidActive;
+                }
+                //if statement hits when asteroid is active
+                if (asteroid1.asteroidActive)
+                {
+                    float elapsedTime = (float)gameTime.ElapsedGameTime.TotalSeconds;
+                //following two if statements say if asteroid hits earth!!!
+                    if (asteroid1.position.Y < 300 && asteroid1.position.Y > 230)
+                    {if (asteroid1.position.X < 300 && asteroid1.position.X > 230)
+                        {
+                            gameOverActive = true;
+                        }
+                    }
+                    //update position of asteroid
+                    asteroid1.updatePosition(elapsedTime);
+                }
+                //Collision detection between bullet and asteroid
+                if (Vector2.Distance(bulletPosition, asteroid1.position) < 35)
+                {
+                    asteroidActive = false;
+                    bulletActive = false;
+                    bulletPosition = new Vector2(300, 300);
+                    asteroid1.position = new Vector2(-30, -30);
+                    //Add a point
+                }
+            }
+                //else statement handles what happens when game over is active
+            else
+            {
+                //If statement that will automatically note when mouse position 
+                if (mouseState.LeftButton == ButtonState.Released)
+                {
+                //if statement which resets game
+                    if (Vector2.Distance(new Vector2(mouseState.X, mouseState.Y), restartPosition) < 30)
+                    {
+                        Reset();
+                        ResetElapsedTime();//Not sure this line actually does anything
+                        gameOverActive = false;
+                    }
+                }
+            }
+
+            base.Update(gameTime);
+        }
+        public void Reset()
+        {
+            //playerPosition = new Vector2(0, 0);
+            //score = 0;
+            //listOfMonsters = new List<Monster>();
+        }
+        //Velocity retuning method
+        public Vector2 getVelocity(Vector2 start,Vector2 finish)
+        {
+            Velocity = -(start - finish);
+            Velocity.Normalize();
+            return Velocity;
+        }
+        protected override void Draw(GameTime gameTime)
+        {
+            spriteBatch.Begin();
+            //draw space background
+            spriteBatch.Draw(BackgroundTexture, new Rectangle(0, 0, Window.ClientBounds.Width, Window.ClientBounds.Height)
+            , null, Color.White, 0, Vector2.Zero, SpriteEffects.None, 0);
+            //draw earth
+            spriteBatch.Draw(earth, earthPosition, Color.White);
+            //draw if bullet active
+            if (bulletActive)
+            {
+            spriteBatch.Draw(bullet, bulletPosition, Color.White);
+            }
+            //draw is asteroid active
+            if (asteroidActive)
+            {
+            spriteBatch.Draw(asteroid, asteroid1.position, Color.White);
+            }
+            //draw if game over active
+            if (gameOverActive)
+            {
+                spriteBatch.Draw(gameOver, new Rectangle(0, 0, Window.ClientBounds.Width, Window.ClientBounds.Height)
+                , null, Color.White, 0, Vector2.Zero, SpriteEffects.None, 0);
+                spriteBatch.Draw(restart, restartPosition, Color.White);         
+            }
+            //draw curser to help user navigate
+            spriteBatch.Draw(curser, MouseLocation, Color.White);
+            spriteBatch.End();
+
+            base.Draw(gameTime);
+        }
+    }
+}

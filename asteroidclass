@@ -1,0 +1,36 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using Microsoft.Xna.Framework;
+
+namespace MyFirstGame
+{
+    class asteroid
+    {
+        public Vector2 startLoc;
+        public Vector2 endLoc = new Vector2(300, 300);
+        public Vector2 velocity,position;
+        public bool asteroidActive;
+        public asteroid(Vector2 startlo)
+        {
+            startLoc = startlo;
+            velocity = getVelocity(startLoc,endLoc);
+            asteroidActive = true;
+            position = new Vector2(0, 0);
+
+        }
+        public void updatePosition(float gTime)
+        {
+          position += (velocity * 200 * gTime);
+        }
+
+        public Vector2 getVelocity(Vector2 start, Vector2 end)
+        {
+            Vector2 Velocity;
+            Velocity = -(start - end);
+            Velocity.Normalize();
+            return Velocity;
+        }
+    }
+}
